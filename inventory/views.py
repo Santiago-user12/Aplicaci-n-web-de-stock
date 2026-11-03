@@ -54,9 +54,13 @@ def sale_create(request):
     customers = Customer.objects.order_by('name')
     if request.method == 'POST':
         try:
-            product = get_object_or_404(Product, pk=request.POST['product'])
+            product_ids = request.POST.getlist('product')
+            quantities = request.POST.getlist('quantity')
+            lines = [(get_object_or_404(Product, pk=product_id), quantity) for product_id, quantity in zip(product_ids, quantities)]
+            if not lines:
+                raise ValueError('Agregá al menos un producto a la venta.')
             warehouse = get_object_or_404(Warehouse, pk=request.POST['warehouse'])
-            sale = create_sale(warehouse=warehouse, customer=Customer.objects.filter(pk=request.POST.get('customer')).first() if request.POST.get('customer') else None, user=request.user, lines=[(product, request.POST['quantity'])], consume_recipe=request.POST.get('consume_recipe') == 'on', notes=request.POST.get('notes', ''))
+            sale = create_sale(warehouse=warehouse, customer=Customer.objects.filter(pk=request.POST.get('customer')).first() if request.POST.get('customer') else None, user=request.user, lines=lines, consume_recipe=request.POST.get('consume_recipe') == 'on', notes=request.POST.get('notes', ''))
             messages.success(request, f'Venta #{sale.pk} registrada. Total: $ {sale.total:.2f}')
             return redirect('sale_receipt', sale_id=sale.pk)
         except (ValueError, KeyError) as error:
