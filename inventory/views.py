@@ -3,8 +3,8 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import F, Sum, DecimalField, ExpressionWrapper
 from django.shortcuts import get_object_or_404, redirect, render
-from .models import Category, Product, Stock, StockMovement, Warehouse
-from .services import register_movement
+from .models import Category, Customer, Product, Sale, Stock, StockMovement, Warehouse
+from .services import create_sale, register_movement
 
 @login_required
 def dashboard(request):
@@ -46,3 +46,24 @@ def movement_create(request):
         except (ValueError, KeyError) as error:
             messages.error(request, str(error))
     return render(request, 'inventory/movement_form.html', {'products': products, 'warehouses': warehouses, 'movement_types': StockMovement.TYPES})
+
+@login_required
+def sale_create(request):
+    products = Product.objects.filter(active=True).order_by('name')
+    warehouses = Warehouse.objects.filter(active=True).order_by('name')
+    customers = Customer.objects.order_by('name')
+    if request.method == 'POST':
+        try:
+            product = get_object_or_404(Product, pk=request.POST['product'])
+            warehouse = get_object_or_404(Warehouse, pk=request.POST['warehouse'])
+            sale = create_sale(warehouse=warehouse, customer=Customer.objects.filter(pk=request.POST.get('customer')).first() if request.POST.get('customer') else None, user=request.user, lines=[(product, request.POST['quantity'])], consume_recipe=request.POST.get('consume_recipe') == 'on', notes=request.POST.get('notes', ''))
+            messages.success(request, f'Venta #{sale.pk} registrada. Total: $ {sale.total:.2f}')
+            return redirect('sale_receipt', sale_id=sale.pk)
+        except (ValueError, KeyError) as error:
+            messages.error(request, str(error))
+    return render(request, 'inventory/sale_form.html', {'products': products, 'warehouses': warehouses, 'customers': customers})
+
+@login_required
+def sale_receipt(request, sale_id):
+    sale = get_object_or_404(Sale.objects.select_related('warehouse', 'customer').prefetch_related('items__product'), pk=sale_id)
+    return render(request, 'inventory/sale_receipt.html', {'sale': sale})

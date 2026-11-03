@@ -95,3 +95,35 @@ class RecipeItem(models.Model):
     @property
     def cost(self):
         return self.quantity * self.ingredient.cost
+
+class Customer(models.Model):
+    name = models.CharField(max_length=160)
+    tax_id = models.CharField(max_length=30, blank=True)
+    phone = models.CharField(max_length=40, blank=True)
+    email = models.EmailField(blank=True)
+
+    def __str__(self):
+        return self.name
+
+class Sale(models.Model):
+    STATUS = [('paid', 'Pagada'), ('pending', 'Pendiente'), ('cancelled', 'Anulada')]
+    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True)
+    warehouse = models.ForeignKey(Warehouse, on_delete=models.PROTECT)
+    status = models.CharField(max_length=20, choices=STATUS, default='paid')
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def total(self):
+        return sum((line.subtotal for line in self.items.all()), Decimal('0'))
+
+class SaleItem(models.Model):
+    sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.PROTECT)
+    quantity = models.DecimalField(max_digits=14, decimal_places=3, validators=[MinValueValidator(Decimal('0.001'))])
+    unit_price = models.DecimalField(max_digits=14, decimal_places=2)
+
+    @property
+    def subtotal(self):
+        return self.quantity * self.unit_price

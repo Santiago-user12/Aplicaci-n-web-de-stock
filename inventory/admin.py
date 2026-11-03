@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import BusinessSettings, Warehouse, Category, Product, Stock, StockMovement, Recipe, RecipeItem
+from .models import BusinessSettings, Warehouse, Category, Product, Stock, StockMovement, Recipe, RecipeItem, Customer, Sale, SaleItem
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
@@ -19,4 +19,10 @@ class StockMovementAdmin(admin.ModelAdmin):
     list_filter = ('movement_type', 'warehouse')
     date_hierarchy = 'created_at'
 
-admin.site.register([BusinessSettings, Warehouse, Category, Recipe, RecipeItem])
+@admin.register(Sale)
+class SaleAdmin(admin.ModelAdmin):
+    list_display = ('id', 'created_at', 'warehouse', 'customer', 'status', 'total')
+    list_filter = ('status', 'warehouse')
+    date_hierarchy = 'created_at'
+
+admin.site.register([BusinessSettings, Warehouse, Category, Recipe, RecipeItem, Customer, SaleItem])

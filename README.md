@@ -16,7 +16,11 @@ Sistema web de control de stock, costos y operaciones para comercios, gastronom�
 - Múltiples depósitos y sucursales.
 - Movimientos de entrada, salida, compra, venta, producción y ajustes.
 - Promedio ponderado funcionando; FIFO y último costo quedan modelados para el siguiente incremento.
-- Recetas y materias primas modeladas para gastronomía.
+- Recetas y materias primas para gastronomía, con costo de receta.
+- Punto de venta inicial: registra una venta, actualiza stock y calcula el total.
+- Descuento automático de ingredientes al vender un producto con receta.
+- Comandas imprimibles desde el navegador, incluyendo notas para despacho.
+- Clientes básicos asociados a ventas.
 - Administración Django para proveedores, clientes, recetas, depósitos, categorías y usuarios.
 - Docker Compose con MySQL 8.4.
 
@@ -49,4 +53,4 @@ pytest -q
 
 ## Próximos incrementos
 
-AFIP, punto de venta completo, comandas imprimibles, recetas con descuento automático de ingredientes, transferencias entre depósitos, importación/exportación y configuración visual desde la interfaz.
+AFIP, múltiples líneas por venta, transferencias entre depósitos, compras y proveedores completos, cuentas corrientes, importación/exportación, roles detallados, reportes avanzados y configuración visual desde la interfaz.

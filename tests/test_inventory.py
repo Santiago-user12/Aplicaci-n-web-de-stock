@@ -1,8 +1,7 @@
 from decimal import Decimal
 import pytest
-from django.contrib.auth import get_user_model
-from inventory.models import Product, Warehouse, Stock
-from inventory.services import register_movement
+from inventory.models import Product, Warehouse, Stock, Recipe, RecipeItem, Sale
+from inventory.services import register_movement, create_sale
 
 @pytest.mark.django_db
 def test_purchase_updates_stock_and_weighted_cost():
@@ -22,3 +21,22 @@ def test_sale_cannot_exceed_available_stock():
     register_movement(product=product, warehouse=warehouse, movement_type='purchase', quantity=2, unit_cost=5)
     with pytest.raises(ValueError, match='Stock insuficiente'):
         register_movement(product=product, warehouse=warehouse, movement_type='sale', quantity=3)
+
+@pytest.mark.django_db
+def test_sale_consumes_recipe_ingredients_and_returns_total():
+    dish = Product.objects.create(sku='PIZ-1', name='Pizza', sale_price=Decimal('1200'))
+    flour = Product.objects.create(sku='HAR-1', name='Harina', cost=Decimal('100'))
+    cheese = Product.objects.create(sku='QUE-1', name='Queso', cost=Decimal('500'))
+    warehouse = Warehouse.objects.create(name='Cocina', code='COCINA')
+    register_movement(product=flour, warehouse=warehouse, movement_type='purchase', quantity=10, unit_cost=100)
+    register_movement(product=cheese, warehouse=warehouse, movement_type='purchase', quantity=10, unit_cost=500)
+    register_movement(product=dish, warehouse=warehouse, movement_type='purchase', quantity=3, unit_cost=600)
+    recipe = Recipe.objects.create(product=dish, yield_quantity=1)
+    RecipeItem.objects.create(recipe=recipe, ingredient=flour, quantity=2)
+    RecipeItem.objects.create(recipe=recipe, ingredient=cheese, quantity=1)
+    sale = create_sale(warehouse=warehouse, lines=[(dish, 1)], consume_recipe=True)
+    assert sale.total == Decimal('1200')
+    assert Stock.objects.get(product=flour, warehouse=warehouse).quantity == Decimal('8.000')
+    assert Stock.objects.get(product=cheese, warehouse=warehouse).quantity == Decimal('9.000')
+    assert Stock.objects.get(product=dish, warehouse=warehouse).quantity == Decimal('2.000')
+
