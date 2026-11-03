@@ -1,6 +1,8 @@
 from decimal import Decimal
 import pytest
-from inventory.models import Product, Warehouse, Stock, Recipe, RecipeItem, Sale, Supplier, Purchase
+from django.contrib.auth import get_user_model
+from django.test import Client
+from inventory.models import Product, Warehouse, Stock, Recipe, RecipeItem, Sale, Supplier, UserProfile
 from inventory.services import register_movement, create_sale, create_purchase, transfer_stock
 
 @pytest.mark.django_db
@@ -71,4 +73,17 @@ def test_transfer_moves_stock_between_warehouses():
     transfer_stock(product=product, source=source, target=target, quantity=4)
     assert Stock.objects.get(product=product, warehouse=source).quantity == Decimal('6.000')
     assert Stock.objects.get(product=product, warehouse=target).quantity == Decimal('4.000')
+
+@pytest.mark.django_db
+def test_user_can_change_personal_language():
+    user = get_user_model().objects.create_user(username='cliente', password='secret')
+    profile = UserProfile.objects.create(user=user)
+    client = Client()
+    client.force_login(user)
+    response = client.post('/idioma/', {'language': 'en'}, follow=True)
+    profile.refresh_from_db()
+    assert response.status_code == 200
+    assert profile.language == 'en'
+    assert client.session['django_language'] == 'en'
+    assert response.headers['Content-Language'] == 'en'
 

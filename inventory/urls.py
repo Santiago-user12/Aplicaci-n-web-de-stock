@@ -10,4 +10,5 @@ urlpatterns = [
     path('ventas/<int:sale_id>/comanda/', views.sale_receipt, name='sale_receipt'),
     path('compras/nueva/', views.purchase_create, name='purchase_create'),
     path('transferencias/nueva/', views.transfer_create, name='transfer_create'),
+    path('idioma/', views.set_language, name='set_language'),
 ]

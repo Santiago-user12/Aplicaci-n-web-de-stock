@@ -23,7 +23,10 @@ Sistema web de control de stock, costos y operaciones para comercios, gastronom�
 - Descuento automático de ingredientes al vender un producto con receta.
 - Comandas imprimibles desde el navegador, incluyendo notas para despacho.
 - Clientes y proveedores básicos asociados a operaciones.
-- Administración Django para proveedores, clientes, recetas, depósitos, categorías y usuarios.
+- Preferencia de idioma por usuario: Español o English, persistida en su perfil.
+- Roles base configurables desde administración: administrador, encargado, vendedor, depósito y solo lectura.
+- Selector de idioma visible en el panel principal.
+- Administración Django para proveedores, clientes, perfiles, recetas, depósitos, categorías y usuarios.
 - Docker Compose con MySQL 8.4.
 
 ## Inicio local

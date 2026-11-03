@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import F, Sum, DecimalField, ExpressionWrapper
 from django.shortcuts import get_object_or_404, redirect, render
-from .models import Category, Customer, Product, Purchase, Sale, Stock, StockMovement, Supplier, Warehouse
+from .models import Category, Customer, Product, Purchase, Sale, Stock, StockMovement, Supplier, UserProfile, Warehouse
 from .services import create_purchase, create_sale, register_movement, transfer_stock
 
 @login_required
@@ -106,3 +106,17 @@ def transfer_create(request):
         except (ValueError, KeyError) as error:
             messages.error(request, str(error))
     return render(request, 'inventory/transfer_form.html', {'products': products, 'warehouses': warehouses})
+
+@login_required
+def set_language(request):
+    language = request.POST.get('language', 'es')
+    if language not in {'es', 'en'}:
+        language = 'es'
+    try:
+        profile = request.user.profile
+    except UserProfile.DoesNotExist:
+        profile = UserProfile.objects.create(user=request.user)
+    profile.language = language
+    profile.save(update_fields=['language'])
+    request.session['django_language'] = language
+    return redirect(request.POST.get('next') or request.META.get('HTTP_REFERER') or 'dashboard')

@@ -160,3 +160,13 @@ class PurchaseItem(models.Model):
     @property
     def subtotal(self):
         return self.quantity * self.unit_cost
+
+class UserProfile(models.Model):
+    LANGUAGES = [('es', 'Español'), ('en', 'English')]
+    ROLES = [('admin', 'Administrador'), ('manager', 'Encargado'), ('seller', 'Vendedor'), ('warehouse', 'Depósito'), ('viewer', 'Solo lectura')]
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
+    language = models.CharField(max_length=2, choices=LANGUAGES, default='es')
+    role = models.CharField(max_length=20, choices=ROLES, default='viewer')
+
+    def __str__(self):
+        return f'{self.user.username} · {self.get_role_display()}'
