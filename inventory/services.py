@@ -1,6 +1,6 @@
 from decimal import Decimal
 from django.db import transaction
-from .models import Sale, SaleItem, Stock, StockMovement
+from .models import Purchase, PurchaseItem, Sale, SaleItem, Stock, StockMovement
 
 INBOUND = {'purchase', 'adjustment_in', 'production'}
 
@@ -42,4 +42,20 @@ def create_sale(*, warehouse, lines, customer=None, user=None, consume_recipe=Fa
 
 def recipe_cost(recipe):
     return sum((item.cost for item in recipe.items.select_related('ingredient')), Decimal('0')) / (recipe.yield_quantity or Decimal('1'))
+
+@transaction.atomic
+def create_purchase(*, supplier, warehouse, lines, user=None, notes=''):
+    purchase = Purchase.objects.create(supplier=supplier, warehouse=warehouse, created_by=user, notes=notes)
+    for product, quantity, unit_cost in lines:
+        quantity, unit_cost = Decimal(str(quantity)), Decimal(str(unit_cost))
+        register_movement(product=product, warehouse=warehouse, movement_type='purchase', quantity=quantity, unit_cost=unit_cost, user=user, reference=f'PURCHASE-{purchase.pk}')
+        PurchaseItem.objects.create(purchase=purchase, product=product, quantity=quantity, unit_cost=unit_cost)
+    return purchase
+
+@transaction.atomic
+def transfer_stock(*, product, source, target, quantity, user=None, notes=''):
+    quantity = Decimal(str(quantity))
+    reference = f'TRANSFER-{product.sku}-{source.code}-{target.code}'
+    register_movement(product=product, warehouse=source, movement_type='transfer', quantity=quantity, unit_cost=product.cost, user=user, reference=reference, notes=notes)
+    register_movement(product=product, warehouse=target, movement_type='adjustment_in', quantity=quantity, unit_cost=product.cost, user=user, reference=reference, notes=notes)
 

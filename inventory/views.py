@@ -3,8 +3,8 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import F, Sum, DecimalField, ExpressionWrapper
 from django.shortcuts import get_object_or_404, redirect, render
-from .models import Category, Customer, Product, Sale, Stock, StockMovement, Warehouse
-from .services import create_sale, register_movement
+from .models import Category, Customer, Product, Purchase, Sale, Stock, StockMovement, Supplier, Warehouse
+from .services import create_purchase, create_sale, register_movement, transfer_stock
 
 @login_required
 def dashboard(request):
@@ -67,3 +67,38 @@ def sale_create(request):
 def sale_receipt(request, sale_id):
     sale = get_object_or_404(Sale.objects.select_related('warehouse', 'customer').prefetch_related('items__product'), pk=sale_id)
     return render(request, 'inventory/sale_receipt.html', {'sale': sale})
+
+@login_required
+def purchase_create(request):
+    products = Product.objects.filter(active=True).order_by('name')
+    warehouses = Warehouse.objects.filter(active=True).order_by('name')
+    suppliers = Supplier.objects.order_by('name')
+    if request.method == 'POST':
+        try:
+            product = get_object_or_404(Product, pk=request.POST['product'])
+            warehouse = get_object_or_404(Warehouse, pk=request.POST['warehouse'])
+            supplier = Supplier.objects.filter(pk=request.POST.get('supplier')).first() if request.POST.get('supplier') else None
+            purchase = create_purchase(supplier=supplier, warehouse=warehouse, user=request.user, lines=[(product, request.POST['quantity'], request.POST['unit_cost'])], notes=request.POST.get('notes', ''))
+            messages.success(request, f'Compra #{purchase.pk} registrada. Stock actualizado.')
+            return redirect('dashboard')
+        except (ValueError, KeyError) as error:
+            messages.error(request, str(error))
+    return render(request, 'inventory/purchase_form.html', {'products': products, 'warehouses': warehouses, 'suppliers': suppliers})
+
+@login_required
+def transfer_create(request):
+    products = Product.objects.filter(active=True).order_by('name')
+    warehouses = Warehouse.objects.filter(active=True).order_by('name')
+    if request.method == 'POST':
+        try:
+            product = get_object_or_404(Product, pk=request.POST['product'])
+            source = get_object_or_404(Warehouse, pk=request.POST['source'])
+            target = get_object_or_404(Warehouse, pk=request.POST['target'])
+            if source == target:
+                raise ValueError('El depósito de origen y destino deben ser diferentes.')
+            transfer_stock(product=product, source=source, target=target, quantity=request.POST['quantity'], user=request.user, notes=request.POST.get('notes', ''))
+            messages.success(request, 'Transferencia registrada correctamente.')
+            return redirect('dashboard')
+        except (ValueError, KeyError) as error:
+            messages.error(request, str(error))
+    return render(request, 'inventory/transfer_form.html', {'products': products, 'warehouses': warehouses})
