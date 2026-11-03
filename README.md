@@ -24,7 +24,12 @@ Sistema web de control de stock, costos y operaciones para comercios, gastronom�
 - Comandas imprimibles desde el navegador, incluyendo notas para despacho.
 - Clientes y proveedores básicos asociados a operaciones.
 - Preferencia de idioma por usuario: Español o English, persistida en su perfil.
-- Roles base configurables desde administración: administrador, encargado, vendedor, depósito y solo lectura.
+- Roles base configurables desde administración y permisos reales por operación:
+  - administrador y encargado: gestión completa;
+  - vendedor: ventas;
+  - depósito: movimientos y transferencias;
+  - solo lectura: consulta del dashboard y catálogo.
+- Pantalla de acceso restringido para operaciones no autorizadas.
 - Selector de idioma visible en el panel principal.
 - Administración Django para proveedores, clientes, perfiles, recetas, depósitos, categorías y usuarios.
 - Docker Compose con MySQL 8.4.
@@ -58,4 +63,4 @@ pytest -q
 
 ## Próximos incrementos
 
-AFIP, devoluciones y anulaciones, cuentas corrientes, roles detallados, importación/exportación, reportes avanzados y configuración visual desde la interfaz.
+AFIP, devoluciones y anulaciones, cuentas corrientes, traducción completa de formularios y reportes, importación/exportación y configuración visual desde la interfaz.

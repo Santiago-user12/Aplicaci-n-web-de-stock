@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import F, Sum, DecimalField, ExpressionWrapper
 from django.shortcuts import get_object_or_404, redirect, render
 from .models import Category, Customer, Product, Purchase, Sale, Stock, StockMovement, Supplier, UserProfile, Warehouse
+from .permissions import role_required
 from .services import create_purchase, create_sale, register_movement, transfer_stock
 
 @login_required
@@ -24,6 +25,7 @@ def product_list(request):
     return render(request, 'inventory/products.html', {'products': products, 'query': query})
 
 @login_required
+@role_required('admin', 'manager')
 def product_create(request):
     if request.method == 'POST':
         category, _ = Category.objects.get_or_create(name=request.POST.get('category', 'General').strip() or 'General')
@@ -33,6 +35,7 @@ def product_create(request):
     return render(request, 'inventory/product_form.html')
 
 @login_required
+@role_required('admin', 'manager', 'warehouse')
 def movement_create(request):
     products = Product.objects.filter(active=True).order_by('name')
     warehouses = Warehouse.objects.filter(active=True).order_by('name')
@@ -48,6 +51,7 @@ def movement_create(request):
     return render(request, 'inventory/movement_form.html', {'products': products, 'warehouses': warehouses, 'movement_types': StockMovement.TYPES})
 
 @login_required
+@role_required('admin', 'manager', 'seller')
 def sale_create(request):
     products = Product.objects.filter(active=True).order_by('name')
     warehouses = Warehouse.objects.filter(active=True).order_by('name')
@@ -73,6 +77,7 @@ def sale_receipt(request, sale_id):
     return render(request, 'inventory/sale_receipt.html', {'sale': sale})
 
 @login_required
+@role_required('admin', 'manager')
 def purchase_create(request):
     products = Product.objects.filter(active=True).order_by('name')
     warehouses = Warehouse.objects.filter(active=True).order_by('name')
@@ -90,6 +95,7 @@ def purchase_create(request):
     return render(request, 'inventory/purchase_form.html', {'products': products, 'warehouses': warehouses, 'suppliers': suppliers})
 
 @login_required
+@role_required('admin', 'manager', 'warehouse')
 def transfer_create(request):
     products = Product.objects.filter(active=True).order_by('name')
     warehouses = Warehouse.objects.filter(active=True).order_by('name')

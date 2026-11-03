@@ -87,3 +87,21 @@ def test_user_can_change_personal_language():
     assert client.session['django_language'] == 'en'
     assert response.headers['Content-Language'] == 'en'
 
+@pytest.mark.django_db
+def test_viewer_cannot_register_purchases_but_seller_can_register_sales():
+    user = get_user_model().objects.create_user(username='vendedor', password='secret')
+    UserProfile.objects.create(user=user, role='seller')
+    client = Client()
+    client.force_login(user)
+    assert client.get('/compras/nueva/').status_code == 403
+    assert client.get('/ventas/nueva/').status_code == 200
+
+@pytest.mark.django_db
+def test_viewer_can_read_dashboard_but_cannot_change_stock():
+    user = get_user_model().objects.create_user(username='consulta', password='secret')
+    UserProfile.objects.create(user=user, role='viewer')
+    client = Client()
+    client.force_login(user)
+    assert client.get('/').status_code == 200
+    assert client.get('/movimientos/nuevo/').status_code == 403
+
