@@ -3,7 +3,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client
 from inventory.models import Product, Warehouse, Stock, Recipe, RecipeItem, Sale, Supplier, UserProfile
-from inventory.services import register_movement, create_sale, create_purchase, transfer_stock
+from inventory.services import register_movement, create_sale, create_purchase, transfer_stock, cancel_sale, return_sale
 
 @pytest.mark.django_db
 def test_purchase_updates_stock_and_weighted_cost():
@@ -104,4 +104,29 @@ def test_viewer_can_read_dashboard_but_cannot_change_stock():
     client.force_login(user)
     assert client.get('/').status_code == 200
     assert client.get('/movimientos/nuevo/').status_code == 403
+
+@pytest.mark.django_db
+def test_cancel_sale_restores_stock_and_blocks_second_cancellation():
+    product = Product.objects.create(sku='DEV-1', name='Producto devuelto', sale_price=Decimal('50'))
+    warehouse = Warehouse.objects.create(name='Local', code='DEV')
+    register_movement(product=product, warehouse=warehouse, movement_type='purchase', quantity=5, unit_cost=20)
+    sale = create_sale(warehouse=warehouse, lines=[(product, 2)])
+    cancel_sale(sale=sale)
+    assert Stock.objects.get(product=product, warehouse=warehouse).quantity == Decimal('5.000')
+    sale.refresh_from_db()
+    assert sale.status == 'cancelled'
+    with pytest.raises(ValueError, match='ya fue anulada'):
+        cancel_sale(sale=sale)
+
+@pytest.mark.django_db
+def test_return_sale_restores_stock_and_marks_cancelled():
+    product = Product.objects.create(sku='DEV-2', name='Producto para devolución', sale_price=Decimal('80'))
+    warehouse = Warehouse.objects.create(name='Local', code='DEV2')
+    register_movement(product=product, warehouse=warehouse, movement_type='purchase', quantity=4, unit_cost=30)
+    sale = create_sale(warehouse=warehouse, lines=[(product, 1)])
+    return_sale(sale=sale, reason='Cliente cambió de opinión')
+    sale.refresh_from_db()
+    assert sale.status == 'cancelled'
+    assert 'Cliente cambió de opinión' in sale.notes
+    assert Stock.objects.get(product=product, warehouse=warehouse).quantity == Decimal('4.000')
 

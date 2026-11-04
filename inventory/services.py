@@ -59,3 +59,23 @@ def transfer_stock(*, product, source, target, quantity, user=None, notes=''):
     register_movement(product=product, warehouse=source, movement_type='transfer', quantity=quantity, unit_cost=product.cost, user=user, reference=reference, notes=notes)
     register_movement(product=product, warehouse=target, movement_type='adjustment_in', quantity=quantity, unit_cost=product.cost, user=user, reference=reference, notes=notes)
 
+@transaction.atomic
+def cancel_sale(*, sale):
+    sale = Sale.objects.select_for_update().get(pk=sale.pk)
+    if sale.status == 'cancelled':
+        raise ValueError('La venta ya fue anulada.')
+    sale_movements = list(StockMovement.objects.filter(reference=f'SALE-{sale.pk}', movement_type='sale').select_related('product'))
+    for movement in sale_movements:
+        register_movement(product=movement.product, warehouse=sale.warehouse, movement_type='adjustment_in', quantity=movement.quantity, unit_cost=movement.unit_cost, reference=f'CANCEL-SALE-{sale.pk}', notes='Reintegro por anulación')
+    sale.status = 'cancelled'
+    sale.notes = f'{sale.notes}\nAnulada automáticamente.' if sale.notes else 'Anulada automáticamente.'
+    sale.save(update_fields=['status', 'notes'])
+    return sale
+
+@transaction.atomic
+def return_sale(*, sale, reason=''):
+    sale = cancel_sale(sale=sale)
+    sale.notes = f'{sale.notes}\nMotivo de devolución: {reason}' if reason else sale.notes
+    sale.save(update_fields=['notes'])
+    return sale
+

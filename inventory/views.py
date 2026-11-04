@@ -5,7 +5,7 @@ from django.db.models import F, Sum, DecimalField, ExpressionWrapper
 from django.shortcuts import get_object_or_404, redirect, render
 from .models import Category, Customer, Product, Purchase, Sale, Stock, StockMovement, Supplier, UserProfile, Warehouse
 from .permissions import role_required
-from .services import create_purchase, create_sale, register_movement, transfer_stock
+from .services import cancel_sale, create_purchase, create_sale, register_movement, return_sale, transfer_stock
 
 @login_required
 def dashboard(request):
@@ -75,6 +75,33 @@ def sale_create(request):
 def sale_receipt(request, sale_id):
     sale = get_object_or_404(Sale.objects.select_related('warehouse', 'customer').prefetch_related('items__product'), pk=sale_id)
     return render(request, 'inventory/sale_receipt.html', {'sale': sale})
+
+@login_required
+def sale_list(request):
+    sales = Sale.objects.select_related('warehouse', 'customer').prefetch_related('items')[:50]
+    return render(request, 'inventory/sales.html', {'sales': sales})
+
+@login_required
+@role_required('admin', 'manager')
+def sale_cancel(request, sale_id):
+    if request.method == 'POST':
+        try:
+            cancel_sale(sale=get_object_or_404(Sale, pk=sale_id))
+            messages.success(request, 'Venta anulada y stock reintegrado.')
+        except ValueError as error:
+            messages.error(request, str(error))
+    return redirect('sale_receipt', sale_id=sale_id)
+
+@login_required
+@role_required('admin', 'manager')
+def sale_return(request, sale_id):
+    if request.method == 'POST':
+        try:
+            return_sale(sale=get_object_or_404(Sale, pk=sale_id), reason=request.POST.get('reason', '').strip())
+            messages.success(request, 'Devolución registrada y stock reintegrado.')
+        except ValueError as error:
+            messages.error(request, str(error))
+    return redirect('sale_receipt', sale_id=sale_id)
 
 @login_required
 @role_required('admin', 'manager')
