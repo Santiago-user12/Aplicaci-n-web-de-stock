@@ -34,6 +34,7 @@ Sistema web de control de stock, costos y operaciones para comercios, gastronom�
   - solo lectura: consulta del dashboard y catálogo.
 - Pantalla de acceso restringido para operaciones no autorizadas.
 - Selector de idioma visible en el panel principal.
+- Recuperación de contraseña por correo desde la pantalla de login; en desarrollo usa consola y en producción se configura SMTP mediante variables de entorno.
 - Administración Django para proveedores, clientes, perfiles, recetas, depósitos, categorías y usuarios.
 - Docker Compose con MySQL 8.4.
 
@@ -49,6 +50,18 @@ python manage.py runserver
 ```
 
 Abrir `http://127.0.0.1:8000/`. Crear al menos un depósito desde `/admin/` antes de registrar movimientos.
+
+Para habilitar el envío real de correos, configurá en `.env`:
+
+```env
+EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+EMAIL_HOST=smtp.tu-proveedor.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=tu-cuenta
+EMAIL_HOST_PASSWORD=tu-clave
+EMAIL_USE_TLS=True
+DEFAULT_FROM_EMAIL=no-reply@tudominio.com
+```
 
 ## Con MySQL mediante Docker
 

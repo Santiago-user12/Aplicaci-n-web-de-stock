@@ -1,7 +1,8 @@
 from decimal import Decimal
 import pytest
 from django.contrib.auth import get_user_model
-from django.test import Client
+from django.test import Client, override_settings
+from django.core import mail
 from inventory.models import Product, Warehouse, Stock, Recipe, RecipeItem, Sale, Supplier, UserProfile
 from inventory.services import register_movement, create_sale, create_purchase, transfer_stock, cancel_sale, return_sale
 from inventory.reports import build_sales_summary
@@ -105,6 +106,25 @@ def test_viewer_can_read_dashboard_but_cannot_change_stock():
     client.force_login(user)
     assert client.get('/').status_code == 200
     assert client.get('/movimientos/nuevo/').status_code == 403
+
+@pytest.mark.django_db
+def test_login_exposes_password_reset_flow():
+    user = get_user_model().objects.create_user(username='reset-user', email='reset@example.com', password='old-secret')
+    client = Client()
+    login_page = client.get('/login/')
+    assert login_page.status_code == 200
+    assert b'olvide' in login_page.content.lower() or b'forgot' in login_page.content.lower()
+    reset_page = client.get('/cuenta/olvide-contrasena/')
+    assert reset_page.status_code == 200
+
+@pytest.mark.django_db
+@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+def test_password_reset_sends_email():
+    get_user_model().objects.create_user(username='correo', email='correo@example.com', password='old-secret')
+    response = Client().post('/cuenta/olvide-contrasena/', {'email': 'correo@example.com'})
+    assert response.status_code == 302
+    assert len(mail.outbox) == 1
+    assert 'restablecimiento' in mail.outbox[0].subject.lower()
 
 @pytest.mark.django_db
 def test_cancel_sale_restores_stock_and_blocks_second_cancellation():
