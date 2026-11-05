@@ -16,4 +16,5 @@ urlpatterns = [
     path('idioma/', views.set_language, name='set_language'),
     path('reportes/', views.reports, name='reports'),
     path('productos/exportar.csv', views.products_export_csv, name='products_export_csv'),
+    path('productos/importar/', views.products_import, name='products_import'),
 ]

@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -7,6 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from .models import Category, Customer, PaymentMethod, Product, Purchase, Sale, Stock, StockMovement, Supplier, UserProfile, Warehouse
 from .permissions import role_required
 from .reports import build_sales_summary, products_csv
+from .importers import import_products_csv
 from .services import cancel_sale, create_purchase, create_sale, register_movement, return_sale, transfer_stock
 
 @login_required
@@ -161,10 +163,30 @@ def set_language(request):
 
 @login_required
 def reports(request):
-    return render(request, 'inventory/reports.html', {'summary': build_sales_summary()})
+    start = request.GET.get('start') or None
+    end = request.GET.get('end') or None
+    end_exclusive = datetime.strptime(end, '%Y-%m-%d') + timedelta(days=1) if end else None
+    return render(request, 'inventory/reports.html', {'summary': build_sales_summary(start=start, end=end_exclusive), 'start': start or '', 'end': end or ''})
 
 @login_required
 def products_export_csv(request):
     response = HttpResponse(products_csv(), content_type='text/csv; charset=utf-8')
     response['Content-Disposition'] = 'attachment; filename="stockpilot-productos.csv"'
     return response
+
+@login_required
+@role_required('admin', 'manager')
+def products_import(request):
+    result = None
+    if request.method == 'POST' and request.FILES.get('file'):
+        try:
+            content = request.FILES['file'].read().decode('utf-8-sig')
+            result = import_products_csv(content)
+            if result['errors']:
+                messages.warning(request, f"Importación finalizada con {len(result['errors'])} error(es).")
+            else:
+                messages.success(request, f"Importación completada: {result['created']} creados, {result['updated']} actualizados.")
+        except UnicodeDecodeError:
+            result = {'errors': ['El archivo debe estar guardado como CSV UTF-8.']}
+            messages.error(request, result['errors'][0])
+    return render(request, 'inventory/products_import.html', {'result': result})

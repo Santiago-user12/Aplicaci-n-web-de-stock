@@ -6,6 +6,7 @@ from django.core import mail
 from inventory.models import Product, Warehouse, Stock, Recipe, RecipeItem, Sale, Supplier, UserProfile, PaymentMethod
 from inventory.services import register_movement, create_sale, create_purchase, transfer_stock, cancel_sale, return_sale
 from inventory.reports import build_sales_summary
+from inventory.importers import import_products_csv
 
 @pytest.mark.django_db
 def test_purchase_updates_stock_and_weighted_cost():
@@ -174,4 +175,14 @@ def test_sales_summary_reports_revenue_cost_and_profit():
     assert summary['revenue'] == Decimal('160')
     assert summary['cost'] == Decimal('60')
     assert summary['gross_profit'] == Decimal('100')
+
+@pytest.mark.django_db
+def test_import_products_csv_creates_products_and_stock():
+    warehouse = Warehouse.objects.create(name='Importación', code='IMP')
+    csv_text = 'SKU,Producto,Categoría,Costo,Precio venta,Stock,Depósito\nCSV-1,Producto importado,Almacén,12.50,25,7,IMP\n'
+    result = import_products_csv(csv_text)
+    product = Product.objects.get(sku='CSV-1')
+    assert result == {'created': 1, 'updated': 0, 'stock_rows': 1, 'errors': []}
+    assert product.name == 'Producto importado'
+    assert Stock.objects.get(product=product, warehouse=warehouse).quantity == Decimal('7.000')
 

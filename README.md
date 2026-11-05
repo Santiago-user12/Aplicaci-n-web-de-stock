@@ -25,6 +25,8 @@ Sistema web de control de stock, costos y operaciones para comercios, gastronom�
 - Descuento automático de ingredientes al vender un producto con receta.
 - Historial de ventas con anulaciones y devoluciones que reintegran el stock.
 - Reporte de ventas con ingresos, costos y utilidad bruta.
+- Importación masiva de productos desde CSV UTF-8, con actualización de catálogo y stock por depósito.
+- Reportes filtrables por período desde/hasta.
 - Exportación de productos a CSV con stock total y margen.
 - Comandas imprimibles desde el navegador, incluyendo notas para despacho.
 - Clientes y proveedores básicos asociados a operaciones.
