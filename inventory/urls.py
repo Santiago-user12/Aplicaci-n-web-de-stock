@@ -14,4 +14,6 @@ urlpatterns = [
     path('compras/nueva/', views.purchase_create, name='purchase_create'),
     path('transferencias/nueva/', views.transfer_create, name='transfer_create'),
     path('idioma/', views.set_language, name='set_language'),
+    path('reportes/', views.reports, name='reports'),
+    path('productos/exportar.csv', views.products_export_csv, name='products_export_csv'),
 ]

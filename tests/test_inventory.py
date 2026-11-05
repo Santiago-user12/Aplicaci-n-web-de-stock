@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.test import Client
 from inventory.models import Product, Warehouse, Stock, Recipe, RecipeItem, Sale, Supplier, UserProfile
 from inventory.services import register_movement, create_sale, create_purchase, transfer_stock, cancel_sale, return_sale
+from inventory.reports import build_sales_summary
 
 @pytest.mark.django_db
 def test_purchase_updates_stock_and_weighted_cost():
@@ -129,4 +130,16 @@ def test_return_sale_restores_stock_and_marks_cancelled():
     assert sale.status == 'cancelled'
     assert 'Cliente cambió de opinión' in sale.notes
     assert Stock.objects.get(product=product, warehouse=warehouse).quantity == Decimal('4.000')
+
+@pytest.mark.django_db
+def test_sales_summary_reports_revenue_cost_and_profit():
+    product = Product.objects.create(sku='REP-1', name='Reportable', cost=Decimal('30'), sale_price=Decimal('80'))
+    warehouse = Warehouse.objects.create(name='Reportes', code='REP')
+    register_movement(product=product, warehouse=warehouse, movement_type='purchase', quantity=4, unit_cost=30)
+    create_sale(warehouse=warehouse, lines=[(product, 2)])
+    summary = build_sales_summary()
+    assert summary['sales_count'] == 1
+    assert summary['revenue'] == Decimal('160')
+    assert summary['cost'] == Decimal('60')
+    assert summary['gross_profit'] == Decimal('100')
 

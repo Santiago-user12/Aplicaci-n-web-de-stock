@@ -2,9 +2,11 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import F, Sum, DecimalField, ExpressionWrapper
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from .models import Category, Customer, Product, Purchase, Sale, Stock, StockMovement, Supplier, UserProfile, Warehouse
 from .permissions import role_required
+from .reports import build_sales_summary, products_csv
 from .services import cancel_sale, create_purchase, create_sale, register_movement, return_sale, transfer_stock
 
 @login_required
@@ -153,3 +155,13 @@ def set_language(request):
     profile.save(update_fields=['language'])
     request.session['django_language'] = language
     return redirect(request.POST.get('next') or request.META.get('HTTP_REFERER') or 'dashboard')
+
+@login_required
+def reports(request):
+    return render(request, 'inventory/reports.html', {'summary': build_sales_summary()})
+
+@login_required
+def products_export_csv(request):
+    response = HttpResponse(products_csv(), content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = 'attachment; filename="stockpilot-productos.csv"'
+    return response

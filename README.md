@@ -21,6 +21,9 @@ Sistema web de control de stock, costos y operaciones para comercios, gastronom�
 - Compras a proveedores con actualización automática del costo y stock.
 - Transferencias de stock entre depósitos con trazabilidad de movimientos.
 - Descuento automático de ingredientes al vender un producto con receta.
+- Historial de ventas con anulaciones y devoluciones que reintegran el stock.
+- Reporte de ventas con ingresos, costos y utilidad bruta.
+- Exportación de productos a CSV con stock total y margen.
 - Comandas imprimibles desde el navegador, incluyendo notas para despacho.
 - Clientes y proveedores básicos asociados a operaciones.
 - Preferencia de idioma por usuario: Español o English, persistida en su perfil.
@@ -63,4 +66,4 @@ pytest -q
 
 ## Próximos incrementos
 
-AFIP, devoluciones y anulaciones, cuentas corrientes, traducción completa de formularios y reportes, importación/exportación y configuración visual desde la interfaz.
+AFIP, cuentas corrientes, traducción completa de formularios y reportes, importación masiva desde Excel, reportes por período y configuración visual desde la interfaz.
