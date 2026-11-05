@@ -17,7 +17,9 @@ Sistema web de control de stock, costos y operaciones para comercios, gastronom�
 - Movimientos de entrada, salida, compra, venta, producción y ajustes.
 - Promedio ponderado funcionando; FIFO y último costo quedan modelados para el siguiente incremento.
 - Recetas y materias primas para gastronomía, con costo de receta.
-- Punto de venta inicial con múltiples líneas, actualización de stock y cálculo del total.
+- Métodos de pago configurables desde Administración; cada venta puede asociarse a uno.
+- Comentario individual por producto vendido, visible en la comanda.
+- Formulario de venta con eliminación de líneas, subtotales por producto y total actualizado en vivo.
 - Compras a proveedores con actualización automática del costo y stock.
 - Transferencias de stock entre depósitos con trazabilidad de movimientos.
 - Descuento automático de ingredientes al vender un producto con receta.

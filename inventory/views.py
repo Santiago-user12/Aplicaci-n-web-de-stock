@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import F, Sum, DecimalField, ExpressionWrapper
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from .models import Category, Customer, Product, Purchase, Sale, Stock, StockMovement, Supplier, UserProfile, Warehouse
+from .models import Category, Customer, PaymentMethod, Product, Purchase, Sale, Stock, StockMovement, Supplier, UserProfile, Warehouse
 from .permissions import role_required
 from .reports import build_sales_summary, products_csv
 from .services import cancel_sale, create_purchase, create_sale, register_movement, return_sale, transfer_stock
@@ -58,20 +58,23 @@ def sale_create(request):
     products = Product.objects.filter(active=True).order_by('name')
     warehouses = Warehouse.objects.filter(active=True).order_by('name')
     customers = Customer.objects.order_by('name')
+    payment_methods = PaymentMethod.objects.filter(active=True)
     if request.method == 'POST':
         try:
             product_ids = request.POST.getlist('product')
             quantities = request.POST.getlist('quantity')
-            lines = [(get_object_or_404(Product, pk=product_id), quantity) for product_id, quantity in zip(product_ids, quantities)]
+            comments = request.POST.getlist('comment')
+            lines = [(get_object_or_404(Product, pk=product_id), quantity, comments[index] if index < len(comments) else '') for index, (product_id, quantity) in enumerate(zip(product_ids, quantities))]
             if not lines:
                 raise ValueError('Agregá al menos un producto a la venta.')
             warehouse = get_object_or_404(Warehouse, pk=request.POST['warehouse'])
-            sale = create_sale(warehouse=warehouse, customer=Customer.objects.filter(pk=request.POST.get('customer')).first() if request.POST.get('customer') else None, user=request.user, lines=lines, consume_recipe=request.POST.get('consume_recipe') == 'on', notes=request.POST.get('notes', ''))
+            payment_method = PaymentMethod.objects.filter(pk=request.POST.get('payment_method'), active=True).first() if request.POST.get('payment_method') else None
+            sale = create_sale(warehouse=warehouse, customer=Customer.objects.filter(pk=request.POST.get('customer')).first() if request.POST.get('customer') else None, payment_method=payment_method, user=request.user, lines=lines, consume_recipe=request.POST.get('consume_recipe') == 'on', notes=request.POST.get('notes', ''))
             messages.success(request, f'Venta #{sale.pk} registrada. Total: $ {sale.total:.2f}')
             return redirect('sale_receipt', sale_id=sale.pk)
         except (ValueError, KeyError) as error:
             messages.error(request, str(error))
-    return render(request, 'inventory/sale_form.html', {'products': products, 'warehouses': warehouses, 'customers': customers})
+    return render(request, 'inventory/sale_form.html', {'products': products, 'warehouses': warehouses, 'customers': customers, 'payment_methods': payment_methods})
 
 @login_required
 def sale_receipt(request, sale_id):

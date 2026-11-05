@@ -105,9 +105,21 @@ class Customer(models.Model):
     def __str__(self):
         return self.name
 
+class PaymentMethod(models.Model):
+    name = models.CharField(max_length=80, unique=True)
+    active = models.BooleanField(default=True)
+    sort_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['sort_order', 'name']
+
+    def __str__(self):
+        return self.name
+
 class Sale(models.Model):
     STATUS = [('paid', 'Pagada'), ('pending', 'Pendiente'), ('cancelled', 'Anulada')]
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True)
+    payment_method = models.ForeignKey(PaymentMethod, on_delete=models.SET_NULL, null=True, blank=True)
     warehouse = models.ForeignKey(Warehouse, on_delete=models.PROTECT)
     status = models.CharField(max_length=20, choices=STATUS, default='paid')
     notes = models.TextField(blank=True)
@@ -123,6 +135,7 @@ class SaleItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     quantity = models.DecimalField(max_digits=14, decimal_places=3, validators=[MinValueValidator(Decimal('0.001'))])
     unit_price = models.DecimalField(max_digits=14, decimal_places=2)
+    comment = models.CharField(max_length=240, blank=True)
 
     @property
     def subtotal(self):

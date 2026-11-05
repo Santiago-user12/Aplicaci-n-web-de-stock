@@ -25,13 +25,15 @@ def register_movement(*, product, warehouse, movement_type, quantity, unit_cost=
     return StockMovement.objects.create(product=product, warehouse=warehouse, movement_type=movement_type, quantity=quantity, unit_cost=unit_cost, created_by=user, reference=reference, notes=notes)
 
 @transaction.atomic
-def create_sale(*, warehouse, lines, customer=None, user=None, consume_recipe=False, notes=''):
+def create_sale(*, warehouse, lines, customer=None, payment_method=None, user=None, consume_recipe=False, notes=''):
     """Create a sale and discount finished goods; optionally discount recipe ingredients."""
-    sale = Sale.objects.create(warehouse=warehouse, customer=customer, created_by=user, notes=notes)
-    for product, quantity in lines:
+    sale = Sale.objects.create(warehouse=warehouse, customer=customer, payment_method=payment_method, created_by=user, notes=notes)
+    for line in lines:
+        product, quantity = line[0], line[1]
+        comment = line[2] if len(line) > 2 else ''
         quantity = Decimal(str(quantity))
         register_movement(product=product, warehouse=warehouse, movement_type='sale', quantity=quantity, unit_cost=product.cost, user=user, reference=f'SALE-{sale.pk}')
-        SaleItem.objects.create(sale=sale, product=product, quantity=quantity, unit_price=product.sale_price)
+        SaleItem.objects.create(sale=sale, product=product, quantity=quantity, unit_price=product.sale_price, comment=comment)
         if consume_recipe and hasattr(product, 'recipe'):
             recipe = product.recipe
             multiplier = quantity / (recipe.yield_quantity or Decimal('1'))

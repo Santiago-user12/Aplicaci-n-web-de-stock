@@ -3,7 +3,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client, override_settings
 from django.core import mail
-from inventory.models import Product, Warehouse, Stock, Recipe, RecipeItem, Sale, Supplier, UserProfile
+from inventory.models import Product, Warehouse, Stock, Recipe, RecipeItem, Sale, Supplier, UserProfile, PaymentMethod
 from inventory.services import register_movement, create_sale, create_purchase, transfer_stock, cancel_sale, return_sale
 from inventory.reports import build_sales_summary
 
@@ -125,6 +125,18 @@ def test_password_reset_sends_email():
     assert response.status_code == 302
     assert len(mail.outbox) == 1
     assert 'restablecimiento' in mail.outbox[0].subject.lower()
+
+@pytest.mark.django_db
+def test_sale_stores_payment_method_and_line_comments():
+    product = Product.objects.create(sku='PAY-1', name='Producto pago', sale_price=Decimal('100'))
+    warehouse = Warehouse.objects.create(name='Caja', code='PAY')
+    payment = PaymentMethod.objects.create(name='Transferencia bancaria')
+    register_movement(product=product, warehouse=warehouse, movement_type='purchase', quantity=3, unit_cost=40)
+    sale = create_sale(warehouse=warehouse, lines=[(product, 2, 'Sin envoltorio')], payment_method=payment)
+    sale.refresh_from_db()
+    assert sale.payment_method == payment
+    assert sale.items.get().comment == 'Sin envoltorio'
+    assert sale.total == Decimal('200')
 
 @pytest.mark.django_db
 def test_cancel_sale_restores_stock_and_blocks_second_cancellation():
