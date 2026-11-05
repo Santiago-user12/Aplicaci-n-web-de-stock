@@ -9,7 +9,7 @@ from .models import Category, Customer, PaymentMethod, Product, Purchase, Sale, 
 from .permissions import role_required
 from .reports import build_sales_summary, products_csv
 from .importers import import_products_csv
-from .services import cancel_sale, create_purchase, create_sale, register_movement, return_sale, transfer_stock
+from .services import cancel_sale, create_purchase, create_sale, customer_balance, record_customer_payment, record_supplier_payment, register_movement, return_sale, supplier_balance, transfer_stock
 
 @login_required
 def dashboard(request):
@@ -190,3 +190,22 @@ def products_import(request):
             result = {'errors': ['El archivo debe estar guardado como CSV UTF-8.']}
             messages.error(request, result['errors'][0])
     return render(request, 'inventory/products_import.html', {'result': result})
+
+@login_required
+def current_accounts(request):
+    customers = [(customer, customer_balance(customer)) for customer in Customer.objects.order_by('name')]
+    suppliers = [(supplier, supplier_balance(supplier)) for supplier in Supplier.objects.order_by('name')]
+    return render(request, 'inventory/current_accounts.html', {'customers': customers, 'suppliers': suppliers})
+
+@login_required
+@role_required('admin', 'manager')
+def account_payment(request):
+    if request.method == 'POST':
+        amount = request.POST.get('amount', '0')
+        note = request.POST.get('note', '')
+        if request.POST.get('customer'):
+            record_customer_payment(customer=get_object_or_404(Customer, pk=request.POST['customer']), amount=amount, note=note)
+        elif request.POST.get('supplier'):
+            record_supplier_payment(supplier=get_object_or_404(Supplier, pk=request.POST['supplier']), amount=amount, note=note)
+        messages.success(request, 'Pago registrado en la cuenta corriente.')
+    return redirect('current_accounts')

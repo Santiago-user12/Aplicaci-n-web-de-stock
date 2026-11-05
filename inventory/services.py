@@ -1,6 +1,6 @@
 from decimal import Decimal
 from django.db import transaction
-from .models import Purchase, PurchaseItem, Sale, SaleItem, Stock, StockMovement
+from .models import CustomerAccountEntry, Purchase, PurchaseItem, Sale, SaleItem, Stock, StockMovement, SupplierAccountEntry
 
 INBOUND = {'purchase', 'adjustment_in', 'production'}
 
@@ -80,4 +80,28 @@ def return_sale(*, sale, reason=''):
     sale.notes = f'{sale.notes}\nMotivo de devolución: {reason}' if reason else sale.notes
     sale.save(update_fields=['notes'])
     return sale
+
+@transaction.atomic
+def record_customer_charge(*, customer, amount, note=''):
+    return CustomerAccountEntry.objects.create(customer=customer, entry_type='charge', amount=Decimal(str(amount)), note=note)
+
+@transaction.atomic
+def record_customer_payment(*, customer, amount, note=''):
+    return CustomerAccountEntry.objects.create(customer=customer, entry_type='payment', amount=Decimal(str(amount)), note=note)
+
+def customer_balance(customer):
+    entries = customer.account_entries.all()
+    return sum((entry.amount if entry.entry_type == 'charge' else -entry.amount for entry in entries), Decimal('0'))
+
+@transaction.atomic
+def record_supplier_invoice(*, supplier, amount, note=''):
+    return SupplierAccountEntry.objects.create(supplier=supplier, entry_type='invoice', amount=Decimal(str(amount)), note=note)
+
+@transaction.atomic
+def record_supplier_payment(*, supplier, amount, note=''):
+    return SupplierAccountEntry.objects.create(supplier=supplier, entry_type='payment', amount=Decimal(str(amount)), note=note)
+
+def supplier_balance(supplier):
+    entries = supplier.account_entries.all()
+    return sum((entry.amount if entry.entry_type == 'invoice' else -entry.amount for entry in entries), Decimal('0'))
 

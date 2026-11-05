@@ -151,6 +151,22 @@ class Supplier(models.Model):
     def __str__(self):
         return self.name
 
+class CustomerAccountEntry(models.Model):
+    TYPES = [('charge', 'Cargo'), ('payment', 'Pago')]
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='account_entries')
+    entry_type = models.CharField(max_length=20, choices=TYPES)
+    amount = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
+    note = models.CharField(max_length=240, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class SupplierAccountEntry(models.Model):
+    TYPES = [('invoice', 'Factura'), ('payment', 'Pago')]
+    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='account_entries')
+    entry_type = models.CharField(max_length=20, choices=TYPES)
+    amount = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
+    note = models.CharField(max_length=240, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
 class Purchase(models.Model):
     STATUS = [('received', 'Recibida'), ('pending', 'Pendiente'), ('cancelled', 'Anulada')]
     supplier = models.ForeignKey(Supplier, on_delete=models.SET_NULL, null=True, blank=True)

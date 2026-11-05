@@ -29,7 +29,7 @@ Sistema web de control de stock, costos y operaciones para comercios, gastronom�
 - Reportes filtrables por período desde/hasta.
 - Exportación de productos a CSV con stock total y margen.
 - Comandas imprimibles desde el navegador, incluyendo notas para despacho.
-- Clientes y proveedores básicos asociados a operaciones.
+- Cuentas corrientes de clientes y proveedores, con saldos y registro de pagos.
 - Preferencia de idioma por usuario: Español o English, persistida en su perfil.
 - Roles base configurables desde administración y permisos reales por operación:
   - administrador y encargado: gestión completa;
@@ -83,4 +83,4 @@ pytest -q
 
 ## Próximos incrementos
 
-AFIP, cuentas corrientes, traducción completa de formularios y reportes, importación masiva desde Excel, reportes por período y configuración visual desde la interfaz.
+AFIP, traducción completa de formularios y reportes, importación desde Excel, configuración visual desde la interfaz y conciliación de pagos.

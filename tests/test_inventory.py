@@ -3,8 +3,8 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client, override_settings
 from django.core import mail
-from inventory.models import Product, Warehouse, Stock, Recipe, RecipeItem, Sale, Supplier, UserProfile, PaymentMethod
-from inventory.services import register_movement, create_sale, create_purchase, transfer_stock, cancel_sale, return_sale
+from inventory.models import Product, Warehouse, Stock, Recipe, RecipeItem, Sale, Supplier, UserProfile, PaymentMethod, Customer
+from inventory.services import register_movement, create_sale, create_purchase, transfer_stock, cancel_sale, return_sale, record_customer_charge, record_customer_payment, record_supplier_invoice, record_supplier_payment
 from inventory.reports import build_sales_summary
 from inventory.importers import import_products_csv
 
@@ -185,4 +185,16 @@ def test_import_products_csv_creates_products_and_stock():
     assert result == {'created': 1, 'updated': 0, 'stock_rows': 1, 'errors': []}
     assert product.name == 'Producto importado'
     assert Stock.objects.get(product=product, warehouse=warehouse).quantity == Decimal('7.000')
+
+@pytest.mark.django_db
+def test_customer_and_supplier_current_accounts_track_balances():
+    customer = Customer.objects.create(name='Cliente cuenta corriente')
+    supplier = Supplier.objects.create(name='Proveedor cuenta corriente')
+    record_customer_charge(customer=customer, amount=Decimal('1000'), note='Venta fiada')
+    record_customer_payment(customer=customer, amount=Decimal('350'), note='Pago parcial')
+    record_supplier_invoice(supplier=supplier, amount=Decimal('800'), note='Compra a crédito')
+    record_supplier_payment(supplier=supplier, amount=Decimal('300'), note='Pago al proveedor')
+    from inventory.services import customer_balance, supplier_balance
+    assert customer_balance(customer) == Decimal('650')
+    assert supplier_balance(supplier) == Decimal('500')
 
