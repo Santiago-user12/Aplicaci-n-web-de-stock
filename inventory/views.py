@@ -5,11 +5,11 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import F, Sum, DecimalField, ExpressionWrapper
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from .models import BusinessSettings, Category, Customer, PaymentMethod, Product, Purchase, Sale, Stock, StockMovement, Supplier, UserProfile, Warehouse
+from .models import BusinessSettings, Category, Customer, CustomerAccountEntry, PaymentMethod, Product, Purchase, Sale, Stock, StockMovement, Supplier, SupplierAccountEntry, UserProfile, Warehouse
 from .permissions import role_required
 from .reports import build_sales_summary, products_csv
 from .importers import import_products_csv, import_products_xlsx
-from .services import cancel_sale, create_purchase, create_sale, customer_balance, record_customer_payment, record_supplier_payment, register_movement, return_sale, supplier_balance, transfer_stock
+from .services import cancel_sale, create_purchase, create_sale, customer_balance, record_customer_payment, record_supplier_payment, reconcile_customer_entry, reconcile_supplier_entry, register_movement, return_sale, supplier_balance, transfer_stock
 
 @login_required
 def dashboard(request):
@@ -198,7 +198,9 @@ def products_import(request):
 def current_accounts(request):
     customers = [(customer, customer_balance(customer)) for customer in Customer.objects.order_by('name')]
     suppliers = [(supplier, supplier_balance(supplier)) for supplier in Supplier.objects.order_by('name')]
-    return render(request, 'inventory/current_accounts.html', {'customers': customers, 'suppliers': suppliers})
+    customer_entries = CustomerAccountEntry.objects.select_related('customer').order_by('-created_at')[:30]
+    supplier_entries = SupplierAccountEntry.objects.select_related('supplier').order_by('-created_at')[:30]
+    return render(request, 'inventory/current_accounts.html', {'customers': customers, 'suppliers': suppliers, 'customer_entries': customer_entries, 'supplier_entries': supplier_entries})
 
 @login_required
 @role_required('admin', 'manager')
@@ -211,6 +213,18 @@ def account_payment(request):
         elif request.POST.get('supplier'):
             record_supplier_payment(supplier=get_object_or_404(Supplier, pk=request.POST['supplier']), amount=amount, note=note)
         messages.success(request, 'Pago registrado en la cuenta corriente.')
+    return redirect('current_accounts')
+
+@login_required
+@role_required('admin', 'manager')
+def account_reconcile(request):
+    if request.method == 'POST':
+        reference = request.POST.get('reference', '').strip()
+        if request.POST.get('customer_entry'):
+            reconcile_customer_entry(entry=get_object_or_404(CustomerAccountEntry, pk=request.POST['customer_entry']), reference=reference)
+        elif request.POST.get('supplier_entry'):
+            reconcile_supplier_entry(entry=get_object_or_404(SupplierAccountEntry, pk=request.POST['supplier_entry']), reference=reference)
+        messages.success(request, 'Movimiento conciliado correctamente.')
     return redirect('current_accounts')
 
 @login_required

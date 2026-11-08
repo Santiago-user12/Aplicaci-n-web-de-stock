@@ -19,5 +19,6 @@ urlpatterns = [
     path('productos/importar/', views.products_import, name='products_import'),
     path('cuentas-corrientes/', views.current_accounts, name='current_accounts'),
     path('cuentas-corrientes/pago/', views.account_payment, name='account_payment'),
+    path('cuentas-corrientes/conciliar/', views.account_reconcile, name='account_reconcile'),
     path('configuracion/', views.business_settings, name='business_settings'),
 ]
