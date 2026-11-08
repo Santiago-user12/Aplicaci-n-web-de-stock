@@ -1,7 +1,8 @@
 import csv
 from decimal import Decimal, InvalidOperation
-from io import StringIO
+from io import BytesIO, StringIO
 from django.db import transaction
+from openpyxl import load_workbook
 from .models import Category, Product, Warehouse
 from .services import register_movement
 
@@ -34,3 +35,15 @@ def import_products_csv(csv_text):
         except (InvalidOperation, ValueError, Warehouse.DoesNotExist) as error:
             result['errors'].append(f'Fila {row_number}: {error}')
     return result
+
+def import_products_xlsx(file_bytes):
+    workbook = load_workbook(filename=BytesIO(file_bytes), read_only=True, data_only=True)
+    sheet = workbook.active
+    rows = list(sheet.iter_rows(values_only=True))
+    if not rows:
+        return {'created': 0, 'updated': 0, 'stock_rows': 0, 'errors': ['El archivo está vacío.']}
+    output = StringIO()
+    writer = csv.writer(output)
+    for row in rows:
+        writer.writerow(['' if value is None else value for value in row])
+    return import_products_csv(output.getvalue())

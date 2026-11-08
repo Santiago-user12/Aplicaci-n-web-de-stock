@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from .models import Category, Customer, PaymentMethod, Product, Purchase, Sale, Stock, StockMovement, Supplier, UserProfile, Warehouse
 from .permissions import role_required
 from .reports import build_sales_summary, products_csv
-from .importers import import_products_csv
+from .importers import import_products_csv, import_products_xlsx
 from .services import cancel_sale, create_purchase, create_sale, customer_balance, record_customer_payment, record_supplier_payment, register_movement, return_sale, supplier_balance, transfer_stock
 
 @login_required
@@ -180,8 +180,11 @@ def products_import(request):
     result = None
     if request.method == 'POST' and request.FILES.get('file'):
         try:
-            content = request.FILES['file'].read().decode('utf-8-sig')
-            result = import_products_csv(content)
+            upload = request.FILES['file']
+            if upload.name.lower().endswith('.xlsx'):
+                result = import_products_xlsx(upload.read())
+            else:
+                result = import_products_csv(upload.read().decode('utf-8-sig'))
             if result['errors']:
                 messages.warning(request, f"Importación finalizada con {len(result['errors'])} error(es).")
             else:

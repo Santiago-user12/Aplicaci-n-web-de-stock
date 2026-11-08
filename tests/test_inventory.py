@@ -6,7 +6,9 @@ from django.core import mail
 from inventory.models import Product, Warehouse, Stock, Recipe, RecipeItem, Sale, Supplier, UserProfile, PaymentMethod, Customer
 from inventory.services import register_movement, create_sale, create_purchase, transfer_stock, cancel_sale, return_sale, record_customer_charge, record_customer_payment, record_supplier_invoice, record_supplier_payment
 from inventory.reports import build_sales_summary
-from inventory.importers import import_products_csv
+from io import BytesIO
+from openpyxl import Workbook
+from inventory.importers import import_products_csv, import_products_xlsx
 
 @pytest.mark.django_db
 def test_purchase_updates_stock_and_weighted_cost():
@@ -185,6 +187,20 @@ def test_import_products_csv_creates_products_and_stock():
     assert result == {'created': 1, 'updated': 0, 'stock_rows': 1, 'errors': []}
     assert product.name == 'Producto importado'
     assert Stock.objects.get(product=product, warehouse=warehouse).quantity == Decimal('7.000')
+
+@pytest.mark.django_db
+def test_import_products_xlsx_uses_same_catalog_contract():
+    warehouse = Warehouse.objects.create(name='Excel', code='XLSX')
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.append(['SKU', 'Producto', 'Categoría', 'Costo', 'Precio venta', 'Stock', 'Depósito'])
+    sheet.append(['XLSX-1', 'Producto Excel', 'Oficina', 10, 20, 4, 'XLSX'])
+    file_data = BytesIO()
+    workbook.save(file_data)
+    result = import_products_xlsx(file_data.getvalue())
+    assert result['created'] == 1
+    assert Product.objects.get(sku='XLSX-1').name == 'Producto Excel'
+    assert Stock.objects.get(product__sku='XLSX-1', warehouse=warehouse).quantity == Decimal('4.000')
 
 @pytest.mark.django_db
 def test_customer_and_supplier_current_accounts_track_balances():

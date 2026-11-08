@@ -25,7 +25,7 @@ Sistema web de control de stock, costos y operaciones para comercios, gastronom�
 - Descuento automático de ingredientes al vender un producto con receta.
 - Historial de ventas con anulaciones y devoluciones que reintegran el stock.
 - Reporte de ventas con ingresos, costos y utilidad bruta.
-- Importación masiva de productos desde CSV UTF-8, con actualización de catálogo y stock por depósito.
+- Importación masiva de productos desde CSV UTF-8 o Excel XLSX, con actualización de catálogo y stock por depósito.
 - Reportes filtrables por período desde/hasta.
 - Exportación de productos a CSV con stock total y margen.
 - Comandas imprimibles desde el navegador, incluyendo notas para despacho.
@@ -83,4 +83,4 @@ pytest -q
 
 ## Próximos incrementos
 
-AFIP, traducción completa de formularios y reportes, importación desde Excel, configuración visual desde la interfaz y conciliación de pagos.
+AFIP, traducción completa de formularios y reportes, configuración visual desde la interfaz y conciliación de pagos.
