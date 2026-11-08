@@ -1,6 +1,9 @@
+from .models import BusinessSettings
+
 def ui(request):
     english = getattr(request, 'LANGUAGE_CODE', 'es').startswith('en')
-    return {'LANGUAGE_CODE': 'en' if english else 'es', 'ui': {
+    business = BusinessSettings.objects.first()
+    return {'LANGUAGE_CODE': 'en' if english else 'es', 'business': business, 'ui': {
         'summary': 'Overview' if english else 'Resumen',
         'products': 'Products' if english else 'Productos',
         'new_sale': 'New sale' if english else 'Nueva venta',

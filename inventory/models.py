@@ -5,9 +5,13 @@ from django.db import models
 
 class BusinessSettings(models.Model):
     name = models.CharField(max_length=120, default='Mi negocio')
+    brand_name = models.CharField(max_length=120, default='StockPilot')
     currency = models.CharField(max_length=3, default='ARS')
     industry_mode = models.CharField(max_length=30, default='retail')
     tax_mode = models.CharField(max_length=30, default='manual')
+    primary_color = models.CharField(max_length=7, default='#7c6cff')
+    secondary_color = models.CharField(max_length=7, default='#45d49c')
+    logo_url = models.URLField(blank=True)
     dark_theme = models.BooleanField(default=True)
 
     def __str__(self):

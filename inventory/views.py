@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import F, Sum, DecimalField, ExpressionWrapper
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from .models import Category, Customer, PaymentMethod, Product, Purchase, Sale, Stock, StockMovement, Supplier, UserProfile, Warehouse
+from .models import BusinessSettings, Category, Customer, PaymentMethod, Product, Purchase, Sale, Stock, StockMovement, Supplier, UserProfile, Warehouse
 from .permissions import role_required
 from .reports import build_sales_summary, products_csv
 from .importers import import_products_csv, import_products_xlsx
@@ -212,3 +212,20 @@ def account_payment(request):
             record_supplier_payment(supplier=get_object_or_404(Supplier, pk=request.POST['supplier']), amount=amount, note=note)
         messages.success(request, 'Pago registrado en la cuenta corriente.')
     return redirect('current_accounts')
+
+@login_required
+@role_required('admin', 'manager')
+def business_settings(request):
+    settings, _ = BusinessSettings.objects.get_or_create(pk=1)
+    if request.method == 'POST':
+        settings.name = request.POST.get('name', settings.name).strip() or settings.name
+        settings.brand_name = request.POST.get('brand_name', settings.brand_name).strip() or settings.brand_name
+        settings.currency = request.POST.get('currency', settings.currency).strip().upper()[:3]
+        settings.primary_color = request.POST.get('primary_color', settings.primary_color)
+        settings.secondary_color = request.POST.get('secondary_color', settings.secondary_color)
+        settings.logo_url = request.POST.get('logo_url', '').strip()
+        settings.dark_theme = request.POST.get('dark_theme') == 'on'
+        settings.save()
+        messages.success(request, 'Configuración del negocio actualizada.')
+        return redirect('business_settings')
+    return render(request, 'inventory/business_settings.html', {'business': settings})
