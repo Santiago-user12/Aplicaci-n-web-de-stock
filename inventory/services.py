@@ -1,5 +1,6 @@
 from decimal import Decimal
 from django.db import transaction
+from django.utils import timezone
 from .models import CustomerAccountEntry, Purchase, PurchaseItem, Sale, SaleItem, Stock, StockMovement, SupplierAccountEntry
 
 INBOUND = {'purchase', 'adjustment_in', 'production'}
@@ -104,4 +105,20 @@ def record_supplier_payment(*, supplier, amount, note=''):
 def supplier_balance(supplier):
     entries = supplier.account_entries.all()
     return sum((entry.amount if entry.entry_type == 'invoice' else -entry.amount for entry in entries), Decimal('0'))
+
+@transaction.atomic
+def reconcile_customer_entry(*, entry, reference=''):
+    entry.reconciled = True
+    entry.reference = reference
+    entry.reconciled_at = timezone.now()
+    entry.save(update_fields=['reconciled', 'reference', 'reconciled_at'])
+    return entry
+
+@transaction.atomic
+def reconcile_supplier_entry(*, entry, reference=''):
+    entry.reconciled = True
+    entry.reference = reference
+    entry.reconciled_at = timezone.now()
+    entry.save(update_fields=['reconciled', 'reference', 'reconciled_at'])
+    return entry
 

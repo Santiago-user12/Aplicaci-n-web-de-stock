@@ -3,8 +3,8 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client, override_settings
 from django.core import mail
-from inventory.models import Product, Warehouse, Stock, Recipe, RecipeItem, Sale, Supplier, UserProfile, PaymentMethod, Customer
-from inventory.services import register_movement, create_sale, create_purchase, transfer_stock, cancel_sale, return_sale, record_customer_charge, record_customer_payment, record_supplier_invoice, record_supplier_payment
+from inventory.models import Product, Warehouse, Stock, Recipe, RecipeItem, Sale, Supplier, UserProfile, PaymentMethod, Customer, CustomerAccountEntry, SupplierAccountEntry
+from inventory.services import register_movement, create_sale, create_purchase, transfer_stock, cancel_sale, return_sale, record_customer_charge, record_customer_payment, record_supplier_invoice, record_supplier_payment, reconcile_customer_entry, reconcile_supplier_entry
 from inventory.reports import build_sales_summary
 from io import BytesIO
 from openpyxl import Workbook
@@ -213,4 +213,18 @@ def test_customer_and_supplier_current_accounts_track_balances():
     from inventory.services import customer_balance, supplier_balance
     assert customer_balance(customer) == Decimal('650')
     assert supplier_balance(supplier) == Decimal('500')
+
+@pytest.mark.django_db
+def test_account_entries_can_be_reconciled_with_external_reference():
+    customer = Customer.objects.create(name='Conciliable')
+    supplier = Supplier.objects.create(name='Proveedor conciliable')
+    customer_entry = record_customer_payment(customer=customer, amount=Decimal('100'))
+    supplier_entry = record_supplier_payment(supplier=supplier, amount=Decimal('200'))
+    reconcile_customer_entry(entry=customer_entry, reference='BANCO-001')
+    reconcile_supplier_entry(entry=supplier_entry, reference='BANCO-002')
+    customer_entry.refresh_from_db(); supplier_entry.refresh_from_db()
+    assert customer_entry.reconciled is True
+    assert customer_entry.reference == 'BANCO-001'
+    assert supplier_entry.reconciled is True
+    assert supplier_entry.reference == 'BANCO-002'
 

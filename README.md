@@ -30,6 +30,7 @@ Sistema web de control de stock, costos y operaciones para comercios, gastronom�
 - Exportación de productos a CSV con stock total y margen.
 - Comandas imprimibles desde el navegador, incluyendo notas para despacho.
 - Cuentas corrientes de clientes y proveedores, con saldos y registro de pagos.
+- Conciliación de pagos con estado conciliado, fecha y referencia externa bancaria.
 - Preferencia de idioma por usuario: Español o English, persistida en su perfil.
 - Roles base configurables desde administración y permisos reales por operación:
   - administrador y encargado: gestión completa;
