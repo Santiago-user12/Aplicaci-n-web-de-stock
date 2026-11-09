@@ -82,6 +82,15 @@ La aplicación queda en `http://127.0.0.1:8000/`. Es una base preparada para red
 pytest -q
 ```
 
+## Datos demo
+
+Para cargar un negocio ficticio completo, con depósitos, productos, recetas, compras, ventas, stock, clientes, proveedores y métodos de pago:
+
+```bash
+python manage.py seed_demo
+```
+
+El comando crea **La Esquina Multirubro**, con gastronomía, almacén, bebidas, limpieza y packaging. Ejecutarlo nuevamente agrega nuevas operaciones demo; usar una base limpia si se quiere repetir desde cero.
 ## Próximos incrementos
 
 AFIP, traducción completa de formularios y reportes, configuración visual desde la interfaz y conciliación de pagos.
