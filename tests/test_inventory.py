@@ -93,41 +93,22 @@ def test_user_can_change_personal_language():
     assert response.headers['Content-Language'] == 'en'
 
 @pytest.mark.django_db
-def test_viewer_cannot_register_purchases_but_seller_can_register_sales():
-    user = get_user_model().objects.create_user(username='vendedor', password='secret')
-    UserProfile.objects.create(user=user, role='seller')
+def test_public_mode_allows_purchase_and_sale_without_login():
     client = Client()
-    client.force_login(user)
-    assert client.get('/compras/nueva/').status_code == 403
+    assert client.get('/compras/nueva/').status_code == 200
     assert client.get('/ventas/nueva/').status_code == 200
 
 @pytest.mark.django_db
-def test_viewer_can_read_dashboard_but_cannot_change_stock():
-    user = get_user_model().objects.create_user(username='consulta', password='secret')
-    UserProfile.objects.create(user=user, role='viewer')
+def test_public_mode_allows_dashboard_without_login():
     client = Client()
-    client.force_login(user)
     assert client.get('/').status_code == 200
-    assert client.get('/movimientos/nuevo/').status_code == 403
+    assert client.get('/movimientos/nuevo/').status_code == 200
 
 @pytest.mark.django_db
-def test_login_exposes_password_reset_flow():
-    user = get_user_model().objects.create_user(username='reset-user', email='reset@example.com', password='old-secret')
+def test_public_mode_does_not_require_login():
     client = Client()
-    login_page = client.get('/login/')
-    assert login_page.status_code == 200
-    assert b'olvide' in login_page.content.lower() or b'forgot' in login_page.content.lower()
-    reset_page = client.get('/cuenta/olvide-contrasena/')
-    assert reset_page.status_code == 200
-
-@pytest.mark.django_db
-@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
-def test_password_reset_sends_email():
-    get_user_model().objects.create_user(username='correo', email='correo@example.com', password='old-secret')
-    response = Client().post('/cuenta/olvide-contrasena/', {'email': 'correo@example.com'})
-    assert response.status_code == 302
-    assert len(mail.outbox) == 1
-    assert 'restablecimiento' in mail.outbox[0].subject.lower()
+    assert client.get('/login/').status_code == 404
+    assert client.get('/cuenta/olvide-contrasena/').status_code == 404
 
 @pytest.mark.django_db
 def test_sale_stores_payment_method_and_line_comments():

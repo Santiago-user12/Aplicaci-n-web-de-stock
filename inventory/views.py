@@ -11,7 +11,7 @@ from .reports import build_sales_summary, products_csv
 from .importers import import_products_csv, import_products_xlsx
 from .services import cancel_sale, create_purchase, create_sale, customer_balance, record_customer_payment, record_supplier_payment, reconcile_customer_entry, reconcile_supplier_entry, register_movement, return_sale, supplier_balance, transfer_stock
 
-@login_required
+
 def dashboard(request):
     products = Product.objects.filter(active=True).select_related('category')
     stock_total = Stock.objects.aggregate(total=Sum('quantity'))['total'] or Decimal('0')
@@ -20,7 +20,7 @@ def dashboard(request):
     context = {'products_count': products.count(), 'stock_total': stock_total, 'low_stock': low_stock[:8], 'inventory_value': inventory_value, 'recent_movements': StockMovement.objects.select_related('product', 'warehouse')[:8]}
     return render(request, 'inventory/dashboard.html', context)
 
-@login_required
+
 def product_list(request):
     query = request.GET.get('q', '').strip()
     products = Product.objects.filter(active=True).select_related('category')
@@ -28,8 +28,8 @@ def product_list(request):
         products = products.filter(name__icontains=query) | products.filter(sku__icontains=query)
     return render(request, 'inventory/products.html', {'products': products, 'query': query})
 
-@login_required
-@role_required('admin', 'manager')
+
+
 def product_create(request):
     if request.method == 'POST':
         category, _ = Category.objects.get_or_create(name=request.POST.get('category', 'General').strip() or 'General')
@@ -38,8 +38,8 @@ def product_create(request):
         return redirect('products')
     return render(request, 'inventory/product_form.html')
 
-@login_required
-@role_required('admin', 'manager', 'warehouse')
+
+
 def movement_create(request):
     products = Product.objects.filter(active=True).order_by('name')
     warehouses = Warehouse.objects.filter(active=True).order_by('name')
@@ -54,8 +54,8 @@ def movement_create(request):
             messages.error(request, str(error))
     return render(request, 'inventory/movement_form.html', {'products': products, 'warehouses': warehouses, 'movement_types': StockMovement.TYPES})
 
-@login_required
-@role_required('admin', 'manager', 'seller')
+
+
 def sale_create(request):
     products = Product.objects.filter(active=True).order_by('name')
     warehouses = Warehouse.objects.filter(active=True).order_by('name')
@@ -78,18 +78,18 @@ def sale_create(request):
             messages.error(request, str(error))
     return render(request, 'inventory/sale_form.html', {'products': products, 'warehouses': warehouses, 'customers': customers, 'payment_methods': payment_methods})
 
-@login_required
+
 def sale_receipt(request, sale_id):
     sale = get_object_or_404(Sale.objects.select_related('warehouse', 'customer').prefetch_related('items__product'), pk=sale_id)
     return render(request, 'inventory/sale_receipt.html', {'sale': sale})
 
-@login_required
+
 def sale_list(request):
     sales = Sale.objects.select_related('warehouse', 'customer').prefetch_related('items')[:50]
     return render(request, 'inventory/sales.html', {'sales': sales})
 
-@login_required
-@role_required('admin', 'manager')
+
+
 def sale_cancel(request, sale_id):
     if request.method == 'POST':
         try:
@@ -99,8 +99,8 @@ def sale_cancel(request, sale_id):
             messages.error(request, str(error))
     return redirect('sale_receipt', sale_id=sale_id)
 
-@login_required
-@role_required('admin', 'manager')
+
+
 def sale_return(request, sale_id):
     if request.method == 'POST':
         try:
@@ -110,8 +110,8 @@ def sale_return(request, sale_id):
             messages.error(request, str(error))
     return redirect('sale_receipt', sale_id=sale_id)
 
-@login_required
-@role_required('admin', 'manager')
+
+
 def purchase_create(request):
     products = Product.objects.filter(active=True).order_by('name')
     warehouses = Warehouse.objects.filter(active=True).order_by('name')
@@ -128,8 +128,8 @@ def purchase_create(request):
             messages.error(request, str(error))
     return render(request, 'inventory/purchase_form.html', {'products': products, 'warehouses': warehouses, 'suppliers': suppliers})
 
-@login_required
-@role_required('admin', 'manager', 'warehouse')
+
+
 def transfer_create(request):
     products = Product.objects.filter(active=True).order_by('name')
     warehouses = Warehouse.objects.filter(active=True).order_by('name')
@@ -147,7 +147,7 @@ def transfer_create(request):
             messages.error(request, str(error))
     return render(request, 'inventory/transfer_form.html', {'products': products, 'warehouses': warehouses})
 
-@login_required
+
 def set_language(request):
     language = request.POST.get('language', 'es')
     if language not in {'es', 'en'}:
@@ -161,21 +161,21 @@ def set_language(request):
     request.session['django_language'] = language
     return redirect(request.POST.get('next') or request.META.get('HTTP_REFERER') or 'dashboard')
 
-@login_required
+
 def reports(request):
     start = request.GET.get('start') or None
     end = request.GET.get('end') or None
     end_exclusive = datetime.strptime(end, '%Y-%m-%d') + timedelta(days=1) if end else None
     return render(request, 'inventory/reports.html', {'summary': build_sales_summary(start=start, end=end_exclusive), 'start': start or '', 'end': end or ''})
 
-@login_required
+
 def products_export_csv(request):
     response = HttpResponse(products_csv(), content_type='text/csv; charset=utf-8')
     response['Content-Disposition'] = 'attachment; filename="stockpilot-productos.csv"'
     return response
 
-@login_required
-@role_required('admin', 'manager')
+
+
 def products_import(request):
     result = None
     if request.method == 'POST' and request.FILES.get('file'):
@@ -194,7 +194,7 @@ def products_import(request):
             messages.error(request, result['errors'][0])
     return render(request, 'inventory/products_import.html', {'result': result})
 
-@login_required
+
 def current_accounts(request):
     customers = [(customer, customer_balance(customer)) for customer in Customer.objects.order_by('name')]
     suppliers = [(supplier, supplier_balance(supplier)) for supplier in Supplier.objects.order_by('name')]
@@ -202,8 +202,8 @@ def current_accounts(request):
     supplier_entries = SupplierAccountEntry.objects.select_related('supplier').order_by('-created_at')[:30]
     return render(request, 'inventory/current_accounts.html', {'customers': customers, 'suppliers': suppliers, 'customer_entries': customer_entries, 'supplier_entries': supplier_entries})
 
-@login_required
-@role_required('admin', 'manager')
+
+
 def account_payment(request):
     if request.method == 'POST':
         amount = request.POST.get('amount', '0')
@@ -215,8 +215,8 @@ def account_payment(request):
         messages.success(request, 'Pago registrado en la cuenta corriente.')
     return redirect('current_accounts')
 
-@login_required
-@role_required('admin', 'manager')
+
+
 def account_reconcile(request):
     if request.method == 'POST':
         reference = request.POST.get('reference', '').strip()
@@ -227,8 +227,8 @@ def account_reconcile(request):
         messages.success(request, 'Movimiento conciliado correctamente.')
     return redirect('current_accounts')
 
-@login_required
-@role_required('admin', 'manager')
+
+
 def business_settings(request):
     settings, _ = BusinessSettings.objects.get_or_create(pk=1)
     if request.method == 'POST':
